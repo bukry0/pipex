@@ -12,50 +12,61 @@
 
 #include "pipex.h"
 
-void print_error(int error_code)
+void	ft_free(char **str)
 {
-    if (error_code == 1)
-        perror("Usage: infile cmd1 cmd2 outfile");
-    else if (error_code == 2)
-        perror("Pipe error");
-    else if (error_code == 3)
-        perror("Fork failed");
-    else if (error_code == 4)
-        perror("Error opening input file");
-    else if (error_code == 5)
-        perror("Error opening output file");
-    else if (error_code == 6)
-        perror("empty command");
-    else if (error_code == 6)
-        perror("command not found");
-    exit(1);
-}
-void free_arg(char **argv)
-{
-    int i;
-    i = -1;
-    while (argv[++i])
-        free(argv[i]);
-    free(argv);
+	int	i;
+
+	i = 0;
+	while (str[i] != 0)
+	{
+		free(str[i]);
+		i++;
+	}
+	free(str);
 }
 
-void setup_redirections(int argc, char **argv, int mode)
+void	error(char *message)
 {
-    int fd;
+	perror(message);
+	exit(1);
+}
 
-    if (mode == 0 || mode == 2)
-    {
-        fd = open(argv[1], O_RDONLY);
-        if (fd < 0)
-            print_error(4);
-        dup2(fd, 0);
-    }
-    else if (mode == 1 || mode == 2)
-    {
-        fd = open(argv[argc - 1], O_CREAT | O_WRONLY | O_TRUNC, 0644);
-        if (fd < 0)
-            print_error(5);
-        dup2(fd, 1);
-    }
-    close(fd);
+char	*find_executable_path(char *cmd, char **envp)
+{
+	int		i;
+	char	**path;
+	char	*dir_with_slash;
+	char	*full_cmd_path;
+	char	*path_env;
+
+	path_env = get_path_variable(envp);
+	path = ft_split(path_env, ':');
+	free(path_env);
+	i = -1;
+	while (path[++i])
+	{
+		dir_with_slash = ft_strjoin(path[i], "/");
+		full_cmd_path = ft_strjoin(dir_with_slash, cmd);
+		free(dir_with_slash);
+		if (access(full_cmd_path, F_OK) == 0)
+		{
+			ft_free(path);
+			return (full_cmd_path);
+		}
+		free(full_cmd_path);
+	}
+	ft_free(path);
+	return (NULL);
+}
+
+char	*get_path_variable(char **envp)
+{
+	int		i;
+	char	*path_env;
+
+	i = 0;
+	while (ft_strnstr(envp[i], "PATH", 4) == 0)
+		i++;
+	path_env = ft_substr(envp[i], 5, ft_strlen(envp[i]) - 5);
+	return (path_env);
 }
